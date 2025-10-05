@@ -1,0 +1,12 @@
+# File: deploy/docker/microservices/Dockerfile.redirect
+FROM python:3.11-slim
+WORKDIR /app
+COPY microservices_http/redirect_service/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY common /app/common
+COPY persistence /app/persistence
+COPY microservices_http/redirect_service /app
+ENV PYTHONPATH=/app
+EXPOSE 8001
+ENV GATEWAY_BASE_URL="http://localhost:8080"
+CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8001"]
