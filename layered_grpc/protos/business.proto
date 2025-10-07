@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package business;
+
+service BusinessLogicService {
+  rpc CreateShortURL(CreateShortURLRequest) returns (CreateShortURLResponse);
+  rpc ResolveShortURL(ResolveShortURLRequest) returns (ResolveShortURLResponse);
+  rpc GetTopLinks(GetTopLinksRequest) returns (GetTopLinksResponse);
+  rpc CheckRateLimit(CheckRateLimitRequest) returns (CheckRateLimitResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message CreateShortURLRequest {
+  string long_url = 1;
+  optional int32 ttl_sec = 2;
+  optional int32 max_clicks = 3;
+  string client_ip = 4;
+}
+
+message CreateShortURLResponse {
+  bool success = 1;
+  string code = 2;
+  string short_url = 3;
+  string error = 4;
+}
+
+message ResolveShortURLRequest {
+  string code = 1;
+  bool count_click = 2;
+  string client_ip = 3;
+}
+
+message ResolveShortURLResponse {
+  int32 status = 1;
+  string long_url = 2;
+  string error = 3;
+}
+
+message GetTopLinksRequest {
+  int32 limit = 1;
+}
+
+message GetTopLinksResponse {
+  repeated TopLink links = 1;
+}
+
+message TopLink {
+  string code = 1;
+  int32 clicks = 2;
+  string long_url = 3;
+}
+
+message CheckRateLimitRequest {
+  string ip = 1;
+}
+
+message CheckRateLimitResponse {
+  bool allowed = 1;
+  int32 remaining = 2;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+  string data_service_status = 2;
+}

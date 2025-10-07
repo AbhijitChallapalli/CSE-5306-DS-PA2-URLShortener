@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package data;
+
+service DataService {
+  rpc StoreURL(StoreURLRequest) returns (StoreURLResponse);
+  rpc GetURL(GetURLRequest) returns (GetURLResponse);
+  rpc ResolveURL(ResolveURLRequest) returns (ResolveURLResponse);
+  rpc IncrementClick(IncrementClickRequest) returns (IncrementClickResponse);
+  rpc GetTopLinks(GetTopLinksRequest) returns (GetTopLinksResponse);
+  rpc CheckRateLimit(CheckRateLimitRequest) returns (CheckRateLimitResponse);
+  rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+message StoreURLRequest {
+  string code = 1;
+  string long_url = 2;
+  optional int32 ttl_sec = 3;
+  optional int32 max_clicks = 4;
+}
+
+message StoreURLResponse {
+  bool success = 1;
+  string error = 2;
+}
+
+message GetURLRequest {
+  string code = 1;
+}
+
+message GetURLResponse {
+  bool found = 1;
+  string long_url = 2;
+}
+
+message ResolveURLRequest {
+  string code = 1;
+  bool count_click = 2;
+}
+
+message ResolveURLResponse {
+  int32 status = 1;
+  string long_url = 2;
+}
+
+message IncrementClickRequest {
+  string code = 1;
+}
+
+message IncrementClickResponse {
+  bool success = 1;
+}
+
+message GetTopLinksRequest {
+  int32 limit = 1;
+}
+
+message GetTopLinksResponse {
+  repeated TopLink links = 1;
+}
+
+message TopLink {
+  string code = 1;
+  int32 clicks = 2;
+  string long_url = 3;
+}
+
+message CheckRateLimitRequest {
+  string ip = 1;
+  int32 limit = 2;
+  int32 window_sec = 3;
+}
+
+message CheckRateLimitResponse {
+  bool allowed = 1;
+  int32 remaining = 2;
+}
+
+message HealthCheckRequest {}
+
+message HealthCheckResponse {
+  string status = 1;
+  bool redis_ok = 2;
+}
