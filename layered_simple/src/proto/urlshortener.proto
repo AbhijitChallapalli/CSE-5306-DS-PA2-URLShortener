@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-package business;
+package urlshort.v1;
 
-service BusinessLogicService {
+service URLShortenerService {
   rpc CreateShortURL(CreateShortURLRequest) returns (CreateShortURLResponse);
-  rpc ResolveShortURL(ResolveShortURLRequest) returns (ResolveShortURLResponse);
+  rpc ResolveURL(ResolveURLRequest) returns (ResolveURLResponse);
   rpc GetTopLinks(GetTopLinksRequest) returns (GetTopLinksResponse);
-  rpc CheckRateLimit(CheckRateLimitRequest) returns (CheckRateLimitResponse);
+  rpc GetStats(GetStatsRequest) returns (GetStatsResponse);
   rpc HealthCheck(HealthCheckRequest) returns (HealthCheckResponse);
 }
 
@@ -24,13 +24,13 @@ message CreateShortURLResponse {
   string error = 4;
 }
 
-message ResolveShortURLRequest {
+message ResolveURLRequest {
   string code = 1;
   bool count_click = 2;
   string client_ip = 3;
 }
 
-message ResolveShortURLResponse {
+message ResolveURLResponse {
   int32 status = 1;
   string long_url = 2;
   string error = 3;
@@ -41,27 +41,29 @@ message GetTopLinksRequest {
 }
 
 message GetTopLinksResponse {
-  repeated TopLink links = 1;
+  repeated LinkStats links = 1;
 }
 
-message TopLink {
+message LinkStats {
   string code = 1;
   int32 clicks = 2;
   string long_url = 3;
 }
 
-message CheckRateLimitRequest {
-  string ip = 1;
+message GetStatsRequest {
+  string code = 1;
 }
 
-message CheckRateLimitResponse {
-  bool allowed = 1;
-  int32 remaining = 2;
+message GetStatsResponse {
+  string code = 1;
+  int64 total_clicks = 2;
+  int64 created_at = 3;
+  bool expired = 4;
 }
 
 message HealthCheckRequest {}
 
 message HealthCheckResponse {
   string status = 1;
-  string data_service_status = 2;
+  bool redis_ok = 2;
 }

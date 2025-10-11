@@ -1,224 +1,385 @@
-# CSE-5306-DS-PA2-URLShortener
-This repository contains the design and implementation of our own distributed system(URL Shortener). This implementation is done using two architectures 1) Microservices 2) Layered
+# URL Shortener - Distributed Systems Project
 
+A distributed URL shortener system implementing two different architectures: **Microservices (HTTP/REST)** and **Layered (gRPC)**.
 
-**Example:**
-- Long URL: `https://www.example.com/very/long/path?id=12345`
-- Short URL: `http://short.ly/abc123`
-- User visits short URL → automatically redirected to long URL
+---
 
+## 🎯 What Does It Do?
 
-### 1. Five Functional Requirements
+Converts long URLs into short codes, just like bit.ly:
+- `https://www.example.com/very/long/path` → `http://localhost:8080/abc123`
+- Tracks click analytics
+- Supports link expiration (time-based and click-based)
+- Rate limiting to prevent abuse
 
-#### Requirement 1: Create Short Links
-**What:** Convert long URLs into short codes  
-**How:** 
-- Take long URL as input
-- Generate unique 6-character code (using hash or random)
-- Store mapping in database
-- Return short URL to user
+---
 
-**Example Flow:**
+## 🏗️ Two Architectures
+
+### Architecture 1: Microservices (Port 8080)
+- **5 Services**: API Gateway, Redirect, Analytics, Rate Limit, Redis
+- **Communication**: HTTP/REST with JSON
+- **Good for**: Independent scaling, loose coupling
+
+### Architecture 2: Layered (Port 8081)
+- **5 Nodes**: API Gateway, Business Logic, Data Service, Redis Master, Redis Replica
+- **Communication**: gRPC (binary protocol)
+- **Good for**: Type safety, performance, strict contracts
+
+---
+
+## 📁 Project Structure
+
 ```
-User sends: "https://www.google.com"
-System generates: "abc123"
-System returns: "http://localhost:8080/abc123"
+CSE-5306-DS-PA2-URLShortener/
+├── microservices_http/              # Microservices implementation
+│   ├── api_gateway/                 # Entry point (Port 8080)
+│   ├── redirect_service/            # URL resolution
+│   ├── analytics_service/           # Click tracking
+│   └── ratelimit_service/           # Request limiting
+│
+├── layered_simple/                  # Layered implementation
+│   ├── src/
+│   │   ├── proto/                   # gRPC definitions
+│   │   ├── api_gateway/             # HTTP → gRPC (Port 8081)
+│   │   ├── business_logic/          # Core logic
+│   │   └── data_service/            # Database operations
+│
+├── common/                          # Shared libraries
+│   └── lib/
+│       ├── codegen.py               # Short code generator
+│       ├── rate_limit.py            # Models & rate limiting
+│       └── ttl.py                   # Time-to-live utilities
+│
+├── persistence/                     # Redis operations
+│   ├── redis_client.py              # Redis connection
+│   └── repositories.py              # Data access layer
+│
+└── deploy/
+    ├── compose/                     # Docker Compose files
+    │   ├── docker-compose.micro.yaml
+    │   └── docker-compose.layered.yaml
+    └── docker/                      # Dockerfiles
 ```
 
 ---
 
-#### Requirement 2: Resolve & Redirect (HTTP 301)
-**What:** When user visits short URL, send them to original URL  
-**How:**
-- User visits short URL
-- System looks up short code in database
-- Find original long URL
-- Return HTTP 301 redirect
-- Increment click counter
+## 🚀 Quick Start
 
-**Example Flow:**
-```
-User visits: http://localhost:8080/abc123
-System looks up: abc123 → https://www.google.com
-Browser redirects to: https://www.google.com
-Counter: abc123 clicks = 1 → 2
-```
+### Prerequisites
+- Docker & Docker Compose
+- `grpcurl` (for layered architecture testing)
+  ```bash
+  brew install grpcurl  # macOS
+  ```
 
----
+### Start Both Architectures
 
-#### Requirement 3: Rate Limiting
-**What:** Prevent users from spamming our service  
-**How:**
-- Track requests per IP address
-- Set limit (e.g., 100 requests per minute)
-- Block requests that exceed limit
-- Return error message when blocked
+```bash
+cd deploy/compose
 
-**Two Types:**
-1. **IP-based:** Max 100 requests/minute per IP
-2. **Global:** Max 10,000 requests/minute for entire system
+# Start Microservices (Port 8080)
+docker-compose -f docker-compose.micro.yaml up -d
 
-**Example Flow:**
-```
-IP 192.168.1.1 makes request #1-99: ✓ Allowed
-IP 192.168.1.1 makes request #100: ✓ Allowed
-IP 192.168.1.1 makes request #101: ✗ Blocked (429 Too Many Requests)
-After 1 minute: Counter resets, IP can make requests again
+# Start Layered (Port 8081)
+docker-compose -p layered -f docker-compose.layered.yaml up -d
 ```
 
----
+### Check Status
 
-#### Requirement 4: Top Links Analytics
-**What:** Show most popular/clicked URLs  
-**How:**
-- Track click count for each short code
-- Maintain sorted list by popularity
-- Provide API endpoint to get top N links
-- Update in real-time as clicks happen
+```bash
+# Microservices
+docker-compose -f docker-compose.micro.yaml ps
 
-**Example Output:**
+# Layered
+docker-compose -p layered -f docker-compose.layered.yaml ps
+
+# Health checks
+curl http://localhost:8080/healthz
+curl http://localhost:8081/healthz
 ```
-Top 5 Links:
-1. abc123 → 1,523 clicks → https://example.com
-2. xyz789 → 892 clicks → https://another.com
-3. def456 → 654 clicks → https://third.com
-4. ghi012 → 432 clicks → https://fourth.com
-5. jkl345 → 289 clicks → https://fifth.com
+
+### Stop Services
+
+```bash
+# Stop Microservices
+docker-compose -f docker-compose.micro.yaml down
+
+# Stop Layered
+docker-compose -p layered -f docker-compose.layered.yaml down
 ```
 
 ---
 
-#### Requirement 5: Link Expiration
-**What:** Links can expire based on time or click count  
-**How:**
+## 🧪 Testing Commands
 
-**Time-based Expiration:**
-- User creates link with TTL (time-to-live) = 3600 seconds
-- After 3600 seconds, link stops working
-- System automatically deletes expired links
+### Microservices Architecture (HTTP/REST - Port 8080)
 
-**Click-based Expiration:**
-- User creates link with max_clicks = 50
-- After 50 clicks, link stops working
-- System prevents further access
-
-**Combined:**
-- Can set both: TTL AND max_clicks
-- Whichever limit hits first, link expires
-
-**Example:**
+#### Create Short URL
+```bash
+curl -X POST http://localhost:8080/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"long_url":"https://www.google.com","ttl_sec":3600,"max_clicks":10}'
 ```
-Create link with TTL=1 hour, max_clicks=100
-- Scenario 1: 1 hour passes → link expires (even if only 20 clicks)
-- Scenario 2: 100 clicks reached in 30 min → link expires (before 1 hour)
+
+**Response:**
+```json
+{"code":"Vy6UJ4i","short_url":"http://localhost:8080/Vy6UJ4i"}
+```
+
+#### Get Main URL (Follow Redirect)
+```bash
+curl -L http://localhost:8080/Vy6UJ4i
+```
+
+#### Check URL Without Counting Click (HEAD)
+```bash
+curl -I http://localhost:8080/Vy6UJ4i
+```
+
+#### Get Top Links Analytics
+```bash
+curl http://localhost:8080/analytics/top?limit=5
 ```
 
 ---
 
-## 🏗️ Two System Architectures
+### Layered Architecture (gRPC - Port 8081)
 
-### Architecture 1: Layered (3-Tier) with gRPC
-
-#### Concept: Vertical Stack
-Think of it like a **multi-floor building** where requests flow from top to bottom.
-
-#### Structure:
-```
-🔷 Layer 1: API Gateway (Node 1)
-   - Faces the users
-   - Handles HTTP requests/responses
-   - Converts HTTP → gRPC
-
-🔷 Layer 2: Business Logic (Node 2)
-   - Validates URLs
-   - Generates short codes
-   - Checks rate limits
-   - Enforces expiration rules
-
-🔷 Layer 3: Data Service (Node 3)
-   - Talks to database
-   - Stores/retrieves URLs
-   - Manages counters
-
-🔷 Storage: Redis Database (Nodes 4 & 5)
-   - Master-Replica setup
-   - Stores all data
+#### Create Short URL
+```bash
+grpcurl -plaintext \
+  -proto layered_simple/src/proto/urlshortener.proto \
+  -import-path layered_simple/src/proto \
+  -d '{"long_url": "https://www.google.com", "client_ip": "127.0.0.1"}' \
+  localhost:8081 urlshort.v1.URLShortenerService.CreateShortURL
 ```
 
-#### Communication: gRPC
-- **What:** Binary protocol (not text/JSON)
-- **Why:** Fast, efficient, type-safe
-- **How:** Define Protocol Buffers (like API contracts)
-
-#### Flow Example:
-```
-User → API Gateway (HTTP)
-       ↓
-API Gateway → Business Logic (gRPC call)
-              ↓
-Business Logic → Data Service (gRPC call)
-                 ↓
-Data Service → Redis (database call)
-               ↓
-Response flows back up
+#### Resolve URL (Count Click)
+```bash
+grpcurl -plaintext \
+  -proto layered_simple/src/proto/urlshortener.proto \
+  -import-path layered_simple/src/proto \
+  -d '{"code": "YOUR_CODE", "count_click": true, "client_ip": "127.0.0.1"}' \
+  localhost:8081 urlshort.v1.URLShortenerService.ResolveURL
 ```
 
-#### 5 Nodes:
-1. API Gateway (Presentation)
-2. Business Logic (Processing)
-3. Data Service (Persistence)
-4. Redis Master (Primary storage)
-5. Redis Replica (Backup storage)
-
-
-
-### Architecture 2: Microservices with HTTP/REST
-
-#### Concept: Independent Services
-Think of it like a **food court** where each restaurant operates independently.
-
-#### Structure:
-```
-🔷 API Gateway (Node 1)
-   - Routes requests to appropriate service
-   - Aggregates responses if needed
-
-🔷 Redirect Service (Node 2)
-   - Handles URL resolution
-   - Performs redirects
-   - Manages URL storage
-
-🔷 Analytics Service (Node 3)
-   - Tracks click counts
-   - Provides top links
-   - Aggregates statistics
-
-🔷 Rate Limit Service (Node 4)
-   - Checks request limits
-   - Blocks excessive requests
-   - Manages rate counters
-
-🔷 Redis (Node 5)
-   - Shared database for all services
+#### Resolve URL (No Click Count)
+```bash
+grpcurl -plaintext \
+  -proto layered_simple/src/proto/urlshortener.proto \
+  -import-path layered_simple/src/proto \
+  -d '{"code": "YOUR_CODE", "count_click": false, "client_ip": "127.0.0.1"}' \
+  localhost:8081 urlshort.v1.URLShortenerService.ResolveURL
 ```
 
-#### Communication: HTTP/REST
-- **What:** Standard web protocol with JSON
-- **Why:** Universal, easy to debug, loosely coupled
-- **How:** Each service exposes REST API endpoints
-
-#### Flow Example:
-```
-User → API Gateway (HTTP)
-       ↓
-Gateway → Redirect Service (HTTP) \
-       → Analytics Service (HTTP)  → All talk to Redis
-       → Rate Limit Service (HTTP)/
+#### Get Top Links
+```bash
+grpcurl -plaintext \
+  -proto layered_simple/src/proto/urlshortener.proto \
+  -import-path layered_simple/src/proto \
+  -d '{"limit": 5}' \
+  localhost:8081 urlshort.v1.URLShortenerService.GetTopLinks
 ```
 
-#### 5 Nodes:
-1. API Gateway (Routing)
-2. Redirect Service (URL resolution)
-3. Analytics Service (Statistics)
-4. Rate Limit Service (Protection)
-5. Redis (Shared storage)
+#### Get URL Statistics
+```bash
+grpcurl -plaintext \
+  -proto layered_simple/src/proto/urlshortener.proto \
+  -import-path layered_simple/src/proto \
+  -d '{"code": "YOUR_CODE"}' \
+  localhost:8081 urlshort.v1.URLShortenerService.GetStats
+```
+
+---
+
+## 🔥 Complete Test Flow Scripts
+
+### Microservices Test Script
+Save as `test_microservices.sh`:
+
+```bash
+#!/bin/bash
+echo "=== Creating Short URL ==="
+RESPONSE=$(curl -s -X POST http://localhost:8080/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"long_url":"https://www.github.com"}')
+
+CODE=$(echo $RESPONSE | grep -o '"code":"[^"]*"' | cut -d'"' -f4)
+echo "Created code: $CODE"
+echo "Short URL: http://localhost:8080/$CODE"
+
+echo -e "\n=== Checking Redirect ==="
+curl -I http://localhost:8080/$CODE
+
+echo -e "\n=== Getting Analytics ==="
+curl -s http://localhost:8080/analytics/top?limit=5 | jq
+```
+
+### Layered Test Script
+Save as `test_layered.sh`:
+
+```bash
+#!/bin/bash
+echo "=== Creating Short URL ==="
+RESPONSE=$(grpcurl -plaintext \
+  -proto layered_simple/src/proto/urlshortener.proto \
+  -import-path layered_simple/src/proto \
+  -d '{"long_url": "https://www.github.com", "client_ip": "127.0.0.1"}' \
+  localhost:8081 urlshort.v1.URLShortenerService.CreateShortURL)
+
+CODE=$(echo "$RESPONSE" | sed -n 's/.*"code": *"\([^"]*\)".*/\1/p')
+echo "Created code: $CODE"
+
+echo -e "\n=== Resolving URL ==="
+grpcurl -plaintext \
+  -proto layered_simple/src/proto/urlshortener.proto \
+  -import-path layered_simple/src/proto \
+  -d "{\"code\": \"$CODE\", \"count_click\": true, \"client_ip\": \"127.0.0.1\"}" \
+  localhost:8081 urlshort.v1.URLShortenerService.ResolveURL
+
+echo -e "\n=== Getting Statistics ==="
+grpcurl -plaintext \
+  -proto layered_simple/src/proto/urlshortener.proto \
+  -import-path layered_simple/src/proto \
+  -d "{\"code\": \"$CODE\"}" \
+  localhost:8081 urlshort.v1.URLShortenerService.GetStats
+
+echo -e "\n=== Top Links ==="
+grpcurl -plaintext \
+  -proto layered_simple/src/proto/urlshortener.proto \
+  -import-path layered_simple/src/proto \
+  -d '{"limit": 5}' \
+  localhost:8081 urlshort.v1.URLShortenerService.GetTopLinks
+```
+
+**Make executable:**
+```bash
+chmod +x test_microservices.sh test_layered.sh
+```
+
+---
+
+## 📊 Feature Testing
+
+### Test TTL Expiration
+```bash
+# Microservices
+curl -X POST http://localhost:8080/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"long_url":"https://test.com","ttl_sec":10}'
+
+# Wait 11 seconds, then try to access (should get 404)
+```
+
+### Test Max Clicks
+```bash
+# Microservices
+curl -X POST http://localhost:8080/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"long_url":"https://test.com","max_clicks":3}'
+
+# Access 4 times, 4th should fail with 410 Gone
+```
+
+### Test Rate Limiting
+```bash
+# Spam requests to trigger rate limit (120/minute default)
+for i in {1..125}; do 
+  curl -s http://localhost:8080/healthz > /dev/null
+  echo "Request $i"
+done
+# Should see 429 Too Many Requests
+```
+
+---
+
+## 🔍 Debugging & Logs
+
+### View Logs
+```bash
+# Microservices - all services
+docker-compose -f docker-compose.micro.yaml logs -f
+
+# Microservices - specific service
+docker-compose -f docker-compose.micro.yaml logs -f api-gateway
+
+# Layered - all services
+docker-compose -p layered -f docker-compose.layered.yaml logs -f
+```
+
+### Redis Direct Access
+```bash
+# Connect to Redis
+docker exec -it compose-redis-1 redis-cli
+
+# Check URLs
+KEYS url:*
+GET url:YOUR_CODE
+
+# Check analytics
+ZRANGE zset:clicks 0 -1 WITHSCORES
+
+# Check rate limits
+KEYS ratelimit:*
+
+# Exit
+exit
+```
+
+---
+
+## 🎯 Port Reference
+
+| Service | Port | Architecture |
+|---------|------|--------------|
+| Microservices API Gateway | 8080 | HTTP/REST |
+| Layered API Gateway | 8081 | HTTP → gRPC |
+| Redis | 6379 | Both |
+
+---
+
+## 📚 Key Features
+
+✅ **5 Functional Requirements:**
+1. Create short links
+2. Resolve & redirect (HTTP 301)
+3. Rate limiting (IP-based)
+4. Top links analytics
+5. Link expiration (TTL & max clicks)
+
+✅ **Additional Features:**
+- HEAD request support (check URL without consuming click)
+- Health checks on all services
+- Click tracking
+- Redis persistence
+
+---
+
+## 🛠️ Tech Stack
+
+- **Backend**: Python 3.11, FastAPI, gRPC
+- **Database**: Redis (in-memory)
+- **Containerization**: Docker & Docker Compose
+- **Libraries**: Pydantic, httpx, redis-py, grpcio
+
+---
+
+## 📖 Architecture Comparison
+
+| Feature | Microservices | Layered |
+|---------|--------------|---------|
+| **Communication** | HTTP/REST + JSON | gRPC + Protocol Buffers |
+| **Coupling** | Loose | Tight |
+| **Performance** | Good | Better (binary) |
+| **Debugging** | Easier (readable JSON) | Harder (binary) |
+| **Type Safety** | Runtime | Compile-time |
+| **Scaling** | Independent services | Vertical layers |
+
+---
+
+## 📝 License
+
+MIT License - See [LICENSE](LICENSE) file
+
+---
