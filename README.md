@@ -76,13 +76,12 @@ CSE-5306-DS-PA2-URLShortener/
 ### Start Both Architectures
 
 ```bash
-cd deploy/compose
 
 # Start Microservices (Port 8080)
-docker-compose -f docker-compose.micro.yaml up -d
+docker-compose -f deploy/compose/docker-compose.micro.yaml up -d
 
 # Start Layered (Port 8081)
-docker-compose -p layered -f docker-compose.layered.yaml up -d
+docker-compose -p layered -f deploy/compose/docker-compose.layered.yaml up -d
 ```
 
 ### Check Status
@@ -106,7 +105,7 @@ curl http://localhost:8081/healthz
 docker-compose -f docker-compose.micro.yaml down
 
 # Stop Layered
-docker-compose -p layered -f docker-compose.layered.yaml down
+docker-compose -p layered -f deploy/compose/docker-compose.layered.yaml down
 ```
 
 ---
