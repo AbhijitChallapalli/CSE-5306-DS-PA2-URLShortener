@@ -105,7 +105,7 @@ curl http://localhost:8081/healthz
 docker-compose -f docker-compose.micro.yaml down
 
 # Stop Layered
-docker-compose -p layered -f docker-compose.layered.yaml down
+docker-compose -p layered -f deploy/compose/docker-compose.layered.yaml down
 ```
 
 ---
