@@ -1,12 +1,9 @@
-version: "3.9"
-
 services:
   # Node 1: Layered Application (3 layers in 1 container)
   layered-app:
     build:
       context: ../..
       dockerfile: deploy/docker/layered_simple/Dockerfile.app
-    container_name: urlshort-layered-app
     environment:
       - REDIS_URL=redis://redis-master:6379/0
       - GATEWAY_BASE_URL=http://localhost:8081
@@ -21,7 +18,6 @@ services:
   # Node 2: Nginx (HTTP/2 reverse proxy)
   nginx:
     image: nginx:alpine
-    container_name: urlshort-nginx
     ports:
       - "8081:8081"
     volumes:
@@ -34,7 +30,6 @@ services:
   # Node 3: Redis Master (primary storage)
   redis-master:
     image: redis:7-alpine
-    container_name: urlshort-redis-master
     command: redis-server --appendonly yes
     volumes:
       - redis-master-data:/data
@@ -44,7 +39,6 @@ services:
   # Node 4: Redis Replica (read replica)
   redis-replica:
     image: redis:7-alpine
-    container_name: urlshort-redis-replica
     command: redis-server --replicaof redis-master 6379 --replica-read-only yes
     depends_on:
       - redis-master
@@ -58,7 +52,6 @@ services:
     build:
       context: ../..
       dockerfile: deploy/docker/layered_simple/Dockerfile.worker
-    container_name: urlshort-analytics-worker
     environment:
       - REDIS_URL=redis://redis-master:6379/0
       - WORKER_INTERVAL=10
@@ -73,4 +66,4 @@ volumes:
 
 networks:
   layered-net:
-    name: urlshortener-layered-simple
+    driver: bridge
