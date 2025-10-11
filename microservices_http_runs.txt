@@ -112,3 +112,115 @@ docker compose -f docker-compose.remote.yaml exec -T redis redis-cli FLUSHDB
 
 
 If you want these bundled as a single script (e.g., loadtest/http/run_all.sh) with pretty output and error checks, say the word and I’ll generate it.
+
+
+
+
+======================================================================================================================
+functional requirements:
+
+FR1: Create short URL
+
+FR2: Resolve short URL (GET/HEAD)
+
+FR3: Expire by TTL
+
+FR4: Expire by Max-Clicks
+
+FR5: Top links leaderboard
+
+(Extras at the end: Stats & Health, plus Reset data.)
+
+🟦 Microservices (HTTP via API Gateway)
+
+Uses your docker-compose.remote.yaml and Hub images you already pushed.
+
+0) Start (and cache gateway container id)
+docker compose -f docker-compose.remote.yaml pull
+docker compose -f docker-compose.remote.yaml up -d
+
+# Reuse the gateway’s network namespace so we can reliably call localhost:8080
+GATEWAY=$(docker compose -f docker-compose.remote.yaml ps -q api-gateway)
+echo "GATEWAY=$GATEWAY"
+
+FR1 — Create short URL
+CODE=$(
+  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+    -s -H 'Content-Type: application/json' \
+    -d '{"long_url":"https://www.youtube.com"}' \
+    http://localhost:8080/shorten \
+  | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
+)
+echo "CODE=$CODE"
+
+
+To include TTL & max clicks in creation (helps FR3/FR4 demos), create specific codes below.
+
+FR2 — Resolve short URL (GET/HEAD)
+GET (counts a click; returns 301 + Location header)
+docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+  -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 3
+
+HEAD (does NOT count a click; still 301)
+docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+  -s -I "http://localhost:8080/$CODE" | head -n 3
+
+FR3 — Expire by TTL
+
+Create a short-lived code, wait past TTL, then resolve → 404:
+
+CODE_TTL=$(
+  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+    -s -H 'Content-Type: application/json' \
+    -d '{"long_url":"https://example.com/ttl","ttl_sec":5}' \
+    http://localhost:8080/shorten \
+  | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
+)
+echo "CODE_TTL=$CODE_TTL"
+
+sleep 6
+docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+  -s -o /dev/null -D - "http://localhost:8080/$CODE_TTL" | head -n 2
+# Expect HTTP/1.1 404
+
+FR4 — Expire by Max-Clicks
+
+Create a code with a small click budget; the extra request should → 410:
+
+CODE_CAP=$(
+  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+    -s -H 'Content-Type: application/json' \
+    -d '{"long_url":"https://example.com/cap","max_clicks":2}' \
+    http://localhost:8080/shorten \
+  | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
+)
+echo "CODE_CAP=$CODE_CAP"
+
+# 1st GET (allowed), 2nd GET (allowed), 3rd GET (should be 410)
+for i in 1 2 3; do
+  echo "GET #$i"
+  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+    -s -o /dev/null -D - "http://localhost:8080/$CODE_CAP" | head -n 2
+done
+
+FR5 — Top links leaderboard
+docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+  -s "http://localhost:8080/analytics/top?limit=5"
+
+Extras (Microservices)
+
+Stats (if you added /stats/{code} in the redirect service and gateway):
+
+docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+  -s "http://localhost:8080/stats/$CODE"
+
+
+Health (gateway fans out to services):
+
+docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+  -s http://localhost:8080/healthz
+
+
+Reset data (Redis flush):
+
+docker compose -f docker-compose.remote.yaml exec -T redis redis-cli FLUSHDB

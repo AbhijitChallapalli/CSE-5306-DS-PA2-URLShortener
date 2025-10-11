@@ -78,3 +78,16 @@ async def top(limit: int = 10):
     if r.status_code >= 400:
         raise HTTPException(r.status_code, r.text)
     return r.json()
+
+@app.get("/stats/{code}")
+async def stats(code: str):
+    r = await client.get(f"{REDIRECT_URL}/stats/{code}")
+    if r.status_code >= 400:
+        raise HTTPException(r.status_code, r.text)
+    return r.json()
+
+@app.get("/api/resolve")
+async def api_resolve(code: str, count: bool = True):
+    r = await client.get(f"{REDIRECT_URL}/resolve/{code}", params={"count": "true" if count else "false"})
+    if r.status_code >= 400: raise HTTPException(r.status_code, r.text)
+    return r.json()  # {"long_url": "..."}

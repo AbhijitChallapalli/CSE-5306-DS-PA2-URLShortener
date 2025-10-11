@@ -3,12 +3,12 @@ import os
 import time
 from fastapi import FastAPI, HTTPException,Query
 from fastapi.responses import JSONResponse
-from pydantic import ValidationError
+from pydantic import ValidationError,BaseModel
 from common.lib.rate_limit import ShortenRequest, ShortenResponse, ResolveResponse
 from common.lib.codegen import random_code
 from common.lib.ttl import normalize_ttl
 from persistence.redis_client import get_redis
-from persistence.repositories import set_url, resolve_and_account
+from persistence.repositories import set_url, resolve_and_account, get_stats, remaining_clicks, ttl_remaining
 
 app = FastAPI(title="redirect_service")
 redis = get_redis()
@@ -45,3 +45,24 @@ async def resolve(code: str, count: bool = Query(default=True)):
     if status == 410:
         raise HTTPException(410, "Link click limit exceeded")
     return ResolveResponse(long_url=url)
+
+class StatsResponse(BaseModel):
+    code: str
+    total_clicks: int
+    created_at: int
+    expired: bool
+    remaining_clicks: int | None = None
+    ttl_remaining_sec: int | None = None
+    created_at_iso: str | None = None
+
+@app.get("/stats/{code}", response_model=StatsResponse)
+async def stats(code: str):
+    s = await get_stats(redis, code)
+    if not s: raise HTTPException(404, "Code not found")
+    rem = await remaining_clicks(redis, code)
+    ttl = await ttl_remaining(redis, code)
+    from datetime import datetime, timezone
+    s["remaining_clicks"] = rem
+    s["ttl_remaining_sec"] = ttl if ttl >= 0 else None
+    s["created_at_iso"] = datetime.fromtimestamp(s["created_at"], tz=timezone.utc).isoformat()
+    return StatsResponse(**s)
