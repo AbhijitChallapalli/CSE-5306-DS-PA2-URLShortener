@@ -14,11 +14,12 @@ FR5: Top links leaderboard
 
 0) Start by pulling the images from dockerhub using the yaml file:
 
-docker compose -f docker-compose.remote.yaml pull
-docker compose -f docker-compose.remote.yaml up -d
+cd deploy/compose
+docker compose -f docker-compose.micro.remote.yaml pull
+docker compose -f docker-compose.micro.remote.yaml up -d
 
 # Reuse the gateway’s network namespace so we can reliably call localhost:8080
-GATEWAY=$(docker compose -f docker-compose.remote.yaml ps -q api-gateway)
+GATEWAY=$(docker compose -f docker-compose.micro.remote.yaml ps -q api-gateway)
 echo "GATEWAY=$GATEWAY"
 
 Functional Requirement 1: Create Short URL
