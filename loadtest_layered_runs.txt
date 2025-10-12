@@ -31,7 +31,7 @@ cd ..
 **Make sure you are in the root directory to run the test**
 
 
-100 rps (conc 25) → ghz-100.html
+#100 rps (conc 25) → ghz-100.html
 MSYS_NO_PATHCONV=1 \
 docker run --rm \
   --network urlshortener-layered-simple \
@@ -46,7 +46,7 @@ docker run --rm \
   --format html --output /out/ghz-100.html \
   nginx:8081
 
-200 rps (conc 50) → ghz-200.html
+#200 rps (conc 50) → ghz-200.html
 MSYS_NO_PATHCONV=1 \
 docker run --rm \
   --network urlshortener-layered-simple \
@@ -61,7 +61,7 @@ docker run --rm \
   --format html --output /out/ghz-200.html \
   nginx:8081
 
-400 rps (conc 100) → ghz-400.html
+#400 rps (conc 100) → ghz-400.html
 MSYS_NO_PATHCONV=1 \
 docker run --rm \
   --network urlshortener-layered-simple \
