@@ -24,6 +24,7 @@ echo "GATEWAY=$GATEWAY"
 Functional Requirement 1: Create Short URL
 
 #Create with TTL and max clicks (for expiry demos)
+
 CODE=$(
   docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
     -s -H 'Content-Type: application/json' \
