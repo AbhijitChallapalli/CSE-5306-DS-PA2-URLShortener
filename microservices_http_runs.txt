@@ -30,7 +30,7 @@ GATEWAY=$(docker compose -f docker-compose.micro.remote.yaml ps -q api-gateway)
 
 echo "GATEWAY=$GATEWAY"
 
-*Functional Requirement 1: Create Short URL*
+**Functional Requirement 1: Create Short URL**
 
 #Create with TTL and max clicks (for expiry demos)
 
