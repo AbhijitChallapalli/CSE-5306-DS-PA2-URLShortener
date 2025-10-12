@@ -32,7 +32,7 @@ Functional Requirement 1: Create Short URL
 CODE=$(
   docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
     -s -H 'Content-Type: application/json' \
-    -d '{"long_url":"https://www.youtube.com","ttl_sec":30,"max_clicks":2}' \
+    -d '{"long_url":"https://www.youtube.com","ttl_sec":600,"max_clicks":2}' \
     http://localhost:8080/shorten \
   | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
 )
@@ -63,7 +63,7 @@ done
 
 Functional Requirement 4: TTL expiry(if created with "ttl_sec":30)
 
-sleep 30
+sleep 500
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 2
 # Expect HTTP/1.1 404 after TTL
