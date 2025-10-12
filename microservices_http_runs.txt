@@ -11,6 +11,9 @@ FR4: Expire by Max-Clicks
 FR5: Top links leaderboard
 
 (Extras at the end: Stats & Health, plus Reset data.)
+If you are using MAC OS use this command or skip this step. 
+# Set platform before pulling
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
 
 0) Start by pulling the images from dockerhub using the yaml file:
 
