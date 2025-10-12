@@ -35,6 +35,12 @@ echo "CODE=$CODE"
 
 Uses your file loadtest/k6/k6-resolve.js.
 
+cd ..
+
+cd ..
+
+**Make sure you are in the root directory to run the test**
+
 50 VUs, 60s
 MSYS_NO_PATHCONV=1 \
 docker run --rm --network urlshortener-net \
