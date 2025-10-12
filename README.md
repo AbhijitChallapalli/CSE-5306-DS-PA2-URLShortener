@@ -753,29 +753,3 @@ CSE 5306 - Distributed Systems
 
 **GitHub**: https://github.com/AbhijitChallapalli/CSE-5306-DS-PA2-URLShortener
 
----
-
-## 🎓 Academic Context
-
-This project was developed as Programming Assignment 2 for CSE 5306 (Distributed Systems) at the University of Texas at Arlington. It demonstrates:
-
-- ✅ Distributed system design patterns
-- ✅ Microservices vs Layered architectures
-- ✅ RESTful and gRPC communication
-- ✅ Containerization and orchestration
-- ✅ Performance evaluation and trade-off analysis
-- ✅ Production-ready distributed system implementation
-
----
-
-## 🔗 Quick Links
-
-- [Microservices Tests](microservices_http_runs.txt)
-- [Layered Tests](layered_grpc_runs.txt)
-- [HTTP Load Tests](loadtest_microservice_runs.txt)
-- [gRPC Load Tests](loadtest_layered_runs.txt)
-- [GitHub Repository](https://github.com/AbhijitChallapalli/CSE-5306-DS-PA2-URLShortener)
-
----
-
-**Last Updated**: October 2025
