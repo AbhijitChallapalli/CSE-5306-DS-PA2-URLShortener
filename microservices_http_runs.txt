@@ -1,122 +1,3 @@
-You got it. Below are copy-paste Docker commands to exercise each functional requirement in your microservices (HTTP) architecture using your Docker Hub images (from docker-compose.remote.yaml). They’re self-contained and work on any machine with Docker.
-
-0) Start the stack (Hub images) + set helper var
-# Start services
-docker compose -f docker-compose.micro.remote.yaml up -d
-
-# Cache the gateway container id (used below)
-GATEWAY=$(docker compose -f docker-compose.micro.remote.yaml ps -q api-gateway)
-echo "GATEWAY=$GATEWAY"
-
-
-All commands below run a tiny curl container in the gateway’s network namespace with --network container:$GATEWAY, so we can hit http://localhost:8080 reliably across OSes.
-
-FR1 — Create a short URL
-A) Basic create (returns JSON with code & shortUrl)
-CODE=$(
-  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-    -s -H 'Content-Type: application/json' \
-    -d '{"long_url":"https://www.youtube.com"}' \
-    http://localhost:8080/shorten \
-  | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
-)
-echo "CODE=$CODE"
-
-B) Create with TTL and max clicks (for expiry demos)
-CODE=$(
-  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-    -s -H 'Content-Type: application/json' \
-    -d '{"long_url":"https://www.youtube.com","ttl_sec":30,"max_clicks":2}' \
-    http://localhost:8080/shorten \
-  | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
-)
-echo "CODE=$CODE"
-
-FR2 — Resolve a code (redirect to original URL)
-A) GET (counts a click) → expect 301 with Location: header
-docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-  -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 3
-
-B) HEAD (does not count a click) → also 301, no body
-docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-  -s -I "http://localhost:8080/$CODE" | head -n 3
-
-C) Max-clicks expiry demo (if created with "max_clicks":2)
-for i in 1 2 3; do
-  echo "GET #$i"
-  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-    -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 2
-done
-# The 3rd GET should return HTTP/1.1 410
-
-D) TTL expiry demo (if created with "ttl_sec":5)
-sleep 6
-docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-  -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 2
-# Expect HTTP/1.1 404 after TTL
-
-FR3 — Top links (click leaderboard)
-docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-  -s "http://localhost:8080/analytics/top?limit=5"
-
-FR4 — Per-code “Stats” (inspect stored values)
-
-There’s no REST /stats/{code} in microservices yet, but you can view stats directly in Redis.
-
-# created_at, max_clicks, last_click, etc.
-docker compose -f docker-compose.remote.yaml exec -T redis \
-  redis-cli HGETALL meta:$CODE
-
-# total clicks (score in zset:clicks)
-docker compose -f docker-compose.remote.yaml exec -T redis \
-  redis-cli ZSCORE zset:clicks $CODE
-
-# key presence / TTL (nil if expired)
-docker compose -f docker-compose.remote.yaml exec -T redis \
-  redis-cli GET url:$CODE
-
-
-(If you want, I can give you a tiny FastAPI route to add /stats/{code} to redirect_service that returns {code, total_clicks, created_at, expired}.)
-
-FR5 — Health check (gateway + downstream)
-docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-  -s http://localhost:8080/healthz
-
-(Bonus) Rate limiting demo (IP-based → show 429)
-
-Your remote compose allows overriding ratelimit envs; temporarily tighten limits and recreate just that service:
-
-# Tighten to 1 request per 10 seconds
-RL_LIMIT_PER_MIN=1 RL_WINDOW_SEC=10 \
-docker compose -f docker-compose.remote.yaml up -d --force-recreate ratelimit
-
-
-Now make two quick requests:
-
-# First request should be allowed
-docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-  -s -I "http://localhost:8080/$CODE" | head -n 1
-
-# Second within 10s should be blocked by gateway (429)
-docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-  -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 2
-
-
-Restore defaults afterward:
-
-docker compose -f docker-compose.remote.yaml up -d --force-recreate ratelimit
-# (or explicitly) RL_LIMIT_PER_MIN=120 RL_WINDOW_SEC=60 docker compose -f docker-compose.remote.yaml up -d --force-recreate ratelimit
-
-Reset data (for clean reruns)
-docker compose -f docker-compose.remote.yaml exec -T redis redis-cli FLUSHDB
-
-
-If you want these bundled as a single script (e.g., loadtest/http/run_all.sh) with pretty output and error checks, say the word and I’ll generate it.
-
-
-
-
-======================================================================================================================
 functional requirements:
 
 FR1: Create short URL
@@ -131,11 +12,8 @@ FR5: Top links leaderboard
 
 (Extras at the end: Stats & Health, plus Reset data.)
 
-🟦 Microservices (HTTP via API Gateway)
+0) Start by pulling the images from dockerhub using the yaml file:
 
-Uses your docker-compose.remote.yaml and Hub images you already pushed.
-
-0) Start (and cache gateway container id)
 docker compose -f docker-compose.remote.yaml pull
 docker compose -f docker-compose.remote.yaml up -d
 
@@ -143,84 +21,64 @@ docker compose -f docker-compose.remote.yaml up -d
 GATEWAY=$(docker compose -f docker-compose.remote.yaml ps -q api-gateway)
 echo "GATEWAY=$GATEWAY"
 
-FR1 — Create short URL
+Functional Requirement 1: Create Short URL
+
+#Create with TTL and max clicks (for expiry demos)
 CODE=$(
   docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
     -s -H 'Content-Type: application/json' \
-    -d '{"long_url":"https://www.youtube.com"}' \
+    -d '{"long_url":"https://www.youtube.com","ttl_sec":30,"max_clicks":2}' \
     http://localhost:8080/shorten \
   | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
 )
 echo "CODE=$CODE"
 
 
-To include TTL & max clicks in creation (helps FR3/FR4 demos), create specific codes below.
 
-FR2 — Resolve short URL (GET/HEAD)
-GET (counts a click; returns 301 + Location header)
+Functional Requirement 2: Resolve a code (redirect to original URL)
+
+A) GET (counts a click) → expect 301 with Location: header
+
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 3
 
-HEAD (does NOT count a click; still 301)
+B) HEAD (does not count a click) → also 301, no body
+
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s -I "http://localhost:8080/$CODE" | head -n 3
 
-FR3 — Expire by TTL
+Functional Requirement 3: Expire by max_clicks (if created with "max_clicks":2)
 
-Create a short-lived code, wait past TTL, then resolve → 404:
-
-CODE_TTL=$(
-  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-    -s -H 'Content-Type: application/json' \
-    -d '{"long_url":"https://example.com/ttl","ttl_sec":5}' \
-    http://localhost:8080/shorten \
-  | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
-)
-echo "CODE_TTL=$CODE_TTL"
-
-sleep 6
-docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-  -s -o /dev/null -D - "http://localhost:8080/$CODE_TTL" | head -n 2
-# Expect HTTP/1.1 404
-
-FR4 — Expire by Max-Clicks
-
-Create a code with a small click budget; the extra request should → 410:
-
-CODE_CAP=$(
-  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-    -s -H 'Content-Type: application/json' \
-    -d '{"long_url":"https://example.com/cap","max_clicks":2}' \
-    http://localhost:8080/shorten \
-  | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
-)
-echo "CODE_CAP=$CODE_CAP"
-
-# 1st GET (allowed), 2nd GET (allowed), 3rd GET (should be 410)
-for i in 1 2 3; do
+for i in 1 2; do
   echo "GET #$i"
   docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-    -s -o /dev/null -D - "http://localhost:8080/$CODE_CAP" | head -n 2
+    -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 2
 done
+# The 3rd GET should return HTTP/1.1 410
 
-FR5 — Top links leaderboard
+Functional Requirement 4: TTL expiry(if created with "ttl_sec":30)
+
+sleep 30
+docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+  -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 2
+# Expect HTTP/1.1 404 after TTL
+
+Functional Requirement 5: Top links (click leaderboard)
+
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s "http://localhost:8080/analytics/top?limit=5"
 
-Extras (Microservices)
-
-Stats (if you added /stats/{code} in the redirect service and gateway):
+Functional Requirement 6: Per-code “Stats” (inspect stored values)
 
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s "http://localhost:8080/stats/$CODE"
 
 
-Health (gateway fans out to services):
+Functional Requirement 7: Health check (gateway + downstream)
 
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s http://localhost:8080/healthz
 
 
-Reset data (Redis flush):
-
+Reset data (for clean reruns)
 docker compose -f docker-compose.remote.yaml exec -T redis redis-cli FLUSHDB

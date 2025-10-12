@@ -1,32 +1,32 @@
+functional requirements:
+
+FR1: Create short URL
+
+FR2: Resolve short URL (GET/HEAD)
+
+FR3: Expire by TTL
+
+FR4: Expire by Max-Clicks
+
+FR5: Top links leaderboard
+
+(Extras at the end: Stats & Health, plus Reset data.)
+
+0) Start
+docker compose -f docker-compose.layered.remote.yaml pull
 docker compose -f docker-compose.layered.remote.yaml up -d
+
 
 # optional: get container ids for convenience
 APP=$(docker compose -f docker-compose.layered.remote.yaml ps -q layered-app)
 NGINX=$(docker compose -f docker-compose.layered.remote.yaml ps -q nginx)
 echo "APP=$APP"
 echo "NGINX=$NGINX"
-4) Commands to test the 5 functional requirements (via nginx → gRPC)
-All commands below run grpcurl INSIDE your app container (which already contains grpcurl and the protos at /app/proto). They target nginx:8081 (HTTP/2, plaintext).
 
-FR1 — Create Short URL (and capture CODE)
-A) Basic create
+Functional Requirement 1: Create Short URL(gRPC)
 
-bash
-Copy code
-CODE=$(
-  docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc '
-    grpcurl -plaintext \
-      -import-path /app/proto \
-      -proto /app/proto/urlshortener.proto \
-      -d "{\"long_url\":\"https://www.youtube.com\",\"client_ip\":\"127.0.0.1\"}" \
-      nginx:8081 urlshort.v1.URLShortenerService.CreateShortURL
-  ' | sed -n 's/.*"code": "\(.*\)".*/\1/p'
-)
-echo "CODE=$CODE"
-B) Create with TTL + max clicks (for expiration demos)
+A) Create with TTL + max clicks (for expiration demos)
 
-bash
-Copy code
 CODE=$(
   docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc '
     grpcurl -plaintext \
@@ -37,17 +37,12 @@ CODE=$(
   ' | sed -n 's/.*"code": "\(.*\)".*/\1/p'
 )
 echo "CODE=$CODE"
-FR2 — Resolve URL (redirect target)
-This is gRPC; the service returns the long URL (status + body).
 
-count_click=true → increments analytics and decrements remaining clicks.
 
-count_click=false → read-only resolve.
+Functional Requirement 2: Resolve URL (redirect target)
 
 A) Resolve (count click)
 
-bash
-Copy code
 docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc "
   grpcurl -plaintext \
     -import-path /app/proto \
@@ -57,8 +52,6 @@ docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc "
 "
 B) Resolve (no click count)
 
-bash
-Copy code
 docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc "
   grpcurl -plaintext \
     -import-path /app/proto \
@@ -66,12 +59,10 @@ docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc "
     -d '{\"code\":\"$CODE\",\"count_click\":false,\"client_ip\":\"127.0.0.1\"}' \
     nginx:8081 urlshort.v1.URLShortenerService.ResolveURL
 "
-C) Demo max-clicks expiry (if created with max_clicks:2)
-Run 3 times; the 3rd should show status: 410.
 
-bash
-Copy code
-for i in 1 2 3; do
+Functional Requirement 3: Expire TTL (if created with max_clicks:2)
+
+for i in 1 2; do
   echo "Resolve #$i"
   docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc "
     grpcurl -plaintext -import-path /app/proto -proto /app/proto/urlshortener.proto \
@@ -79,20 +70,20 @@ for i in 1 2 3; do
       nginx:8081 urlshort.v1.URLShortenerService.ResolveURL
   "
 done
-D) Demo TTL expiry (if created with ttl_sec:5)
-Wait 6 seconds → expect status: 404.
 
-bash
-Copy code
-sleep 6
+
+Functional Requirement 4: TTL expiry(if created with "ttl_sec":30)
+
+
+sleep 30
 docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc "
   grpcurl -plaintext -import-path /app/proto -proto /app/proto/urlshortener.proto \
     -d '{\"code\":\"$CODE\",\"count_click\":false,\"client_ip\":\"127.0.0.1\"}' \
     nginx:8081 urlshort.v1.URLShortenerService.ResolveURL
 "
-FR3 — Get Top Links (leaderboard)
-bash
-Copy code
+
+Functional Requirement 5: Get Top Links (leaderboard)
+
 docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc '
   grpcurl -plaintext \
     -import-path /app/proto \
@@ -100,9 +91,8 @@ docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc '
     -d "{\"limit\":5}" \
     nginx:8081 urlshort.v1.URLShortenerService.GetTopLinks
 '
-FR4 — Get URL Statistics (per-code stats)
-bash
-Copy code
+Functional Requirement 6: Get URL Statistics (per-code stats)
+
 docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc "
   grpcurl -plaintext \
     -import-path /app/proto \
@@ -110,9 +100,8 @@ docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc "
     -d '{\"code\":\"$CODE\"}' \
     nginx:8081 urlshort.v1.URLShortenerService.GetStats
 "
-FR5 — Health Check (service + Redis health)
-bash
-Copy code
+Functional Requirement 7: Health Check (service + Redis health)
+
 docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc '
   grpcurl -plaintext \
     -import-path /app/proto \
@@ -120,22 +109,7 @@ docker compose -f docker-compose.layered.remote.yaml exec layered-app sh -lc '
     -d "{}" \
     nginx:8081 urlshort.v1.URLShortenerService.HealthCheck
 '
-5) (Bonus) Rate-limit demo (show 429)
-Temporarily tighten env (only if you want to demo it clearly). Recreate just the app to pick up new limits:
 
-bash
-Copy code
-# tighten to 1 request / 10 seconds
-RL_LIMIT_PER_MIN=1 RL_WINDOW_SEC=10 \
-docker compose -f docker-compose.layered.remote.yaml up -d --force-recreate layered-app
-Then call Resolve twice quickly: first allowed, second should return status: 429 in the gRPC response.
+Reset data (clean runs)
 
-Restore defaults:
-
-bash
-Copy code
-docker compose -f docker-compose.layered.remote.yaml up -d --force-recreate layered-app
-6) Reset data (clean runs)
-bash
-Copy code
 docker compose -f docker-compose.layered.remote.yaml exec -T redis-master redis-cli FLUSHDB
