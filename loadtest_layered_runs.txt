@@ -76,9 +76,4 @@ docker run --rm \
   --format html --output /out/ghz-400.html \
   nginx:8081
 
-
-Open reports (Windows):
-
-explorer.exe "$(pwd -W)/loadtest/ghz/ghz-100.html"
-explorer.exe "$(pwd -W)/loadtest/ghz/ghz-200.html"
-explorer.exe "$(pwd -W)/loadtest/ghz/ghz-400.html"
+You can open the html files for loadtest results at : loadtest/ghz/
