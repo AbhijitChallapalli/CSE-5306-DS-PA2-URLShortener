@@ -83,7 +83,7 @@ CODE=$(
 )
 echo "CODE=$CODE"
 
-sleep 20
+sleep 30
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 2
 # Expect HTTP/1.1 404 after TTL
