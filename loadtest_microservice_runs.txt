@@ -2,11 +2,14 @@
 MICROservices (HTTP via API Gateway) — k6 + Grafana
 0) Bring up the stack + metrics
 # App stack (from Docker Hub images)
-docker compose -f docker-compose.remote.yaml pull
-docker compose -f docker-compose.remote.yaml up -d
+
+cd deploy/compose
+
+docker compose -f docker-compose.micro.remote.yaml pull
+docker compose -f docker-compose.micro.remote.yaml up -d
 
 # Metrics (InfluxDB + Grafana)
-docker compose -f deploy/compose/docker-compose.loadviz.yaml up -d
+docker compose -f docker-compose.loadviz.yaml up -d
 
 # Create InfluxDB database for k6
 docker run --rm --network urlshortener-net curlimages/curl:8.8.0 \
@@ -14,7 +17,9 @@ docker run --rm --network urlshortener-net curlimages/curl:8.8.0 \
 
 1) Seed a short code (so Resolve has a target)
 # Reuse gateway's network namespace so localhost:8080 works inside the curl container
-GATEWAY=$(docker compose -f docker-compose.remote.yaml ps -q api-gateway)
+
+GATEWAY=$(docker compose -f docker-compose.micro.remote.yaml ps -q api-gateway)
+
 echo "GATEWAY=$GATEWAY"
 
 CODE=$(
@@ -73,21 +78,13 @@ docker run --rm --network urlshortener-net \
 
 Open Grafana: http://localhost:3000
 
+Username: admin
+password: 12345
+
 Data source: your InfluxDB (k6).
 
-Dashboard: K6 Load Testing Results (prefer this one).
+Go to Dashboard: You will see two of them with the results.
 
-Panels to screenshot for the report:
-
-Requests per second (http_reqs)
-
-http_req_duration p50/p95/p99
-
-vus (active users)
-
-http_req_failed (error rate)
-
-(You can also quickly verify data exists:)
 
 docker run --rm --network urlshortener-net curlimages/curl:8.8.0 \
   -sG 'http://influxdb:8086/query' \
