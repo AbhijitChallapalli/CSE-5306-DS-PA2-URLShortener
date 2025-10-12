@@ -12,12 +12,12 @@ A high-performance, distributed URL shortening service implementing both **Micro
 
 **All test commands are organized in dedicated txt files.** Follow these for step-by-step testing:
 
-- [`microservices_http_runs.txt`](microservices_http_runs.txt) - Complete microservices testing guide
-- [`layered_grpc_runs.txt`](layered_grpc_runs.txt) - Complete layered architecture testing guide
-- [`loadtest_microservice_runs.txt`](loadtest_microservice_runs.txt) - HTTP load testing
-- [`loadtest_layered_runs.txt`](loadtest_layered_runs.txt) - gRPC load testing
+- [`microservices_http_runs.txt`](microservices_http_runs.txt) - This file has all the run commands for microservice architecture with all the functional requirements executed in order.
+- [`layered_grpc_runs.txt`](layered_grpc_runs.txt) - This file has all the run commands for layered architecture with all the functional requirements executed in order.
+- [`loadtest_microservice_runs.txt`](loadtest_microservice_runs.txt) - This file has all the run commands for microservice architecture for loadtesting.
+- [`loadtest_layered_runs.txt`](loadtest_layered_runs.txt) - This file has all the run commands for layered architecture for loadtesting.
 
-These files contain **all commands in the correct order** with expected outputs. Use them as your primary reference.
+These files contain **all commands in the correct order** of execution. Use them as your primary reference.
 
 ---
 
@@ -28,10 +28,6 @@ These files contain **all commands in the correct order** with expected outputs.
 - [Project Structure](#project-structure)
 - [Functional Requirements](#functional-requirements)
 - [System Architectures](#system-architectures)
-- [Getting Started](#getting-started)
-- [Testing](#testing)
-- [Architecture Comparison](#architecture-comparison)
-- [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
 - [License](#license)
 - [Quick Links](#quick-links)
@@ -275,16 +271,6 @@ Redis Replica (Port 6380)
 
 ---
 
-## Contributing
-
-Contributions are welcome! If you find issues or have suggestions:
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
-
----
 
 ## License
 
@@ -292,50 +278,8 @@ MIT License - See [LICENSE](LICENSE) file for details
 
 ---
 
-## Author
-
-**Abhijit Challapalli**  
-University of Texas at Arlington  
-CSE 5306 - Distributed Systems
 
 **GitHub**: https://github.com/AbhijitChallapalli/CSE-5306-DS-PA2-URLShortener
 
 ---
 
-## Academic Context
-
-This project was developed as Programming Assignment 2 for CSE 5306 (Distributed Systems) at the University of Texas at Arlington. It demonstrates:
-
-- Distributed system design patterns
-- Microservices vs Layered architectures
-- RESTful and gRPC communication
-- Containerization and orchestration
-- Performance evaluation and trade-off analysis
-- Production-ready distributed system implementation
-
----
-
-## Quick Links
-
-### Testing Guides (Start Here)
-
-- [Microservices HTTP Tests](microservices_http_runs.txt) - All REST API commands
-- [Layered gRPC Tests](layered_grpc_runs.txt) - All gRPC commands
-- [HTTP Load Tests](loadtest_microservice_runs.txt) - Performance benchmarking
-- [gRPC Load Tests](loadtest_layered_runs.txt) - Performance benchmarking
-
-### Documentation
-
-- [GitHub Repository](https://github.com/AbhijitChallapalli/CSE-5306-DS-PA2-URLShortener)
-- [Docker Compose Files](deploy/compose/)
-- [API Gateway Code](microservices_http/api_gateway/)
-- [gRPC Proto Files](layered_simple/src/proto/)
-
----
-
-**Note:** For the best testing experience, follow the commands in the txt files above. They're organized, tested, and include expected outputs.
-
----
-
-**Last Updated**: October 2025  
-**Author**: Abhijit Challapalli | University of Texas at Arlington | CSE 5306
