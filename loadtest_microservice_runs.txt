@@ -41,7 +41,7 @@ cd ..
 
 **Make sure you are in the root directory to run the test**
 
-50 VUs, 60s
+#50 VUs, 60s
 MSYS_NO_PATHCONV=1 \
 docker run --rm --network urlshortener-net \
   -v "$PWD/loadtest/k6:/work" \
@@ -51,7 +51,7 @@ docker run --rm --network urlshortener-net \
   --out influxdb=http://influxdb:8086/k6 \
   /work/k6-resolve.js
 
-100 VUs, 60s
+#100 VUs, 60s
 MSYS_NO_PATHCONV=1 \
 docker run --rm --network urlshortener-net \
   -v "$PWD/loadtest/k6:/work" \
@@ -61,7 +61,7 @@ docker run --rm --network urlshortener-net \
   --out influxdb=http://influxdb:8086/k6 \
   /work/k6-resolve.js
 
-200 VUs, 60s
+#200 VUs, 60s
 MSYS_NO_PATHCONV=1 \
 docker run --rm --network urlshortener-net \
   -v "$PWD/loadtest/k6:/work" \
