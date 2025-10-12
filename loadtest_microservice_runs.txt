@@ -1,0 +1,95 @@
+
+MICROservices (HTTP via API Gateway) — k6 + Grafana
+0) Bring up the stack + metrics
+# App stack (from Docker Hub images)
+docker compose -f docker-compose.remote.yaml pull
+docker compose -f docker-compose.remote.yaml up -d
+
+# Metrics (InfluxDB + Grafana)
+docker compose -f deploy/compose/docker-compose.loadviz.yaml up -d
+
+# Create InfluxDB database for k6
+docker run --rm --network urlshortener-net curlimages/curl:8.8.0 \
+  -s -XPOST 'http://influxdb:8086/query' --data-urlencode 'q=CREATE DATABASE k6'
+
+1) Seed a short code (so Resolve has a target)
+# Reuse gateway's network namespace so localhost:8080 works inside the curl container
+GATEWAY=$(docker compose -f docker-compose.remote.yaml ps -q api-gateway)
+echo "GATEWAY=$GATEWAY"
+
+CODE=$(
+  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+    -s -H 'Content-Type: application/json' \
+    -d '{"long_url":"https://www.youtube.com","ttl_sec":300,"max_clicks":100000}' \
+    http://localhost:8080/shorten \
+  | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
+)
+echo "CODE=$CODE"
+
+2) k6 steady-state loads (measure throughput/latency)
+
+Uses your file loadtest/k6/k6-resolve.js.
+
+50 VUs, 60s
+MSYS_NO_PATHCONV=1 \
+docker run --rm --network urlshortener-net \
+  -v "$PWD/loadtest/k6:/work" \
+  -e HOST="http://api-gateway:8080" -e CODE="$CODE" \
+  grafana/k6:latest run \
+  --vus 50 --duration 60s \
+  --out influxdb=http://influxdb:8086/k6 \
+  /work/k6-resolve.js
+
+100 VUs, 60s
+MSYS_NO_PATHCONV=1 \
+docker run --rm --network urlshortener-net \
+  -v "$PWD/loadtest/k6:/work" \
+  -e HOST="http://api-gateway:8080" -e CODE="$CODE" \
+  grafana/k6:latest run \
+  --vus 100 --duration 60s \
+  --out influxdb=http://influxdb:8086/k6 \
+  /work/k6-resolve.js
+
+200 VUs, 60s
+MSYS_NO_PATHCONV=1 \
+docker run --rm --network urlshortener-net \
+  -v "$PWD/loadtest/k6:/work" \
+  -e HOST="http://api-gateway:8080" -e CODE="$CODE" \
+  grafana/k6:latest run \
+  --vus 200 --duration 60s \
+  --out influxdb=http://influxdb:8086/k6 \
+  /work/k6-resolve.js
+
+(Optional) Ramp test (stages in your JS file)
+MSYS_NO_PATHCONV=1 \
+docker run --rm --network urlshortener-net \
+  -v "$PWD/loadtest/k6:/work" \
+  -e HOST="http://api-gateway:8080" -e CODE="$CODE" \
+  grafana/k6:latest run \
+  --out influxdb=http://influxdb:8086/k6 \
+  /work/k6-resolve.js
+
+3) Where to see results
+
+Open Grafana: http://localhost:3000
+
+Data source: your InfluxDB (k6).
+
+Dashboard: K6 Load Testing Results (prefer this one).
+
+Panels to screenshot for the report:
+
+Requests per second (http_reqs)
+
+http_req_duration p50/p95/p99
+
+vus (active users)
+
+http_req_failed (error rate)
+
+(You can also quickly verify data exists:)
+
+docker run --rm --network urlshortener-net curlimages/curl:8.8.0 \
+  -sG 'http://influxdb:8086/query' \
+  --data-urlencode 'db=k6' \
+  --data-urlencode 'q=SHOW MEASUREMENTS'

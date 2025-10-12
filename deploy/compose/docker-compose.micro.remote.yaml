@@ -35,3 +35,7 @@ services:
     image: redis:7-alpine
     command: ["redis-server", "--appendonly", "yes"]
     restart: unless-stopped
+
+networks:
+  default:
+    name: urlshortener-net

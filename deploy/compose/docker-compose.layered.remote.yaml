@@ -12,7 +12,7 @@ services:
   nginx:
     image: abchalla/urlshort-layered-nginx:day1-v2
     ports:
-      - "8081:8081"
+      - "8088:8081"
     depends_on: [layered-app]
 
   redis-master:
@@ -36,3 +36,7 @@ services:
 volumes:
   redis-master-data:
   redis-replica-data:
+
+networks:
+  default:
+    name: urlshortener-layered-simple
