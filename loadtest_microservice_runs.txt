@@ -82,6 +82,13 @@ docker run --rm --network urlshortener-net \
 
 3) Where to see results
 
+
+Option 1: 
+
+You can open the html files for loadtest results at : loadtest/k6/
+
+Option 2: 
+
 Open Grafana: http://localhost:3000
 
 Username: admin
