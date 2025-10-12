@@ -8,72 +8,72 @@ A high-performance, distributed URL shortening service implementing both **Micro
 
 ---
 
-## 🎯 **Important: Testing Guide**
+## Important: Testing Guide
 
 **All test commands are organized in dedicated txt files.** Follow these for step-by-step testing:
 
-- 📘 [`microservices_http_runs.txt`](microservices_http_runs.txt) - Complete microservices testing guide
-- 📙 [`layered_grpc_runs.txt`](layered_grpc_runs.txt) - Complete layered architecture testing guide
-- 📊 [`loadtest_microservice_runs.txt`](loadtest_microservice_runs.txt) - HTTP load testing
-- 📊 [`loadtest_layered_runs.txt`](loadtest_layered_runs.txt) - gRPC load testing
+- [`microservices_http_runs.txt`](microservices_http_runs.txt) - Complete microservices testing guide
+- [`layered_grpc_runs.txt`](layered_grpc_runs.txt) - Complete layered architecture testing guide
+- [`loadtest_microservice_runs.txt`](loadtest_microservice_runs.txt) - HTTP load testing
+- [`loadtest_layered_runs.txt`](loadtest_layered_runs.txt) - gRPC load testing
 
-These files contain **all commands in the correct order** with expected outputs. Use them as your primary reference!
-
----
-
-## 📑 Table of Contents
-- [Important: Testing Guide](#-important-testing-guide)
-- [What is URL Shortening?](#-what-is-url-shortening)
-- [Key Features](#-key-features)
-- [Project Structure](#-project-structure)
-- [Functional Requirements](#-functional-requirements)
-- [System Architectures](#️-system-architectures)
-- [Getting Started](#-getting-started)
-- [Testing](#-testing)
-- [Architecture Comparison](#-architecture-comparison)
-- [Troubleshooting](#-troubleshooting)
-- [Contributing](#-contributing)
-- [License](#-license)
-- [Quick Links](#-quick-links)
+These files contain **all commands in the correct order** with expected outputs. Use them as your primary reference.
 
 ---
 
-## 🌐 What is URL Shortening?
+## Table of Contents
+- [Important: Testing Guide](#important-testing-guide)
+- [What is URL Shortening?](#what-is-url-shortening)
+- [Key Features](#key-features)
+- [Project Structure](#project-structure)
+- [Functional Requirements](#functional-requirements)
+- [System Architectures](#system-architectures)
+- [Getting Started](#getting-started)
+- [Testing](#testing)
+- [Architecture Comparison](#architecture-comparison)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [License](#license)
+- [Quick Links](#quick-links)
+
+---
+
+## What is URL Shortening?
 
 URL shortening transforms long, unwieldy URLs into short, manageable links while maintaining full functionality.
 
 **Example:**
 - Long URL: `https://www.example.com/very/long/path?id=12345`
 - Short URL: `http://short.ly/abc123`
-- User visits short URL → automatically redirected to long URL
+- User visits short URL and is automatically redirected to long URL
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-- ✅ **Create Short Links** - Convert any URL to a 7-character code
-- ✅ **Instant Redirection** - HTTP 301 redirects for optimal browser caching
-- ✅ **Time-based Expiration** - Set TTL (time-to-live) for links
-- ✅ **Click-based Expiration** - Limit number of uses per link
-- ✅ **Rate Limiting** - Protect against abuse (120 req/min default)
-- ✅ **Analytics** - Track click counts and view top links
-- ✅ **HEAD Requests** - Check URLs without consuming click counts
-- ✅ **High Availability** - Redis-backed persistence with optional replication
+- **Create Short Links** - Convert any URL to a 7-character code
+- **Instant Redirection** - HTTP 301 redirects for optimal browser caching
+- **Time-based Expiration** - Set TTL (time-to-live) for links
+- **Click-based Expiration** - Limit number of uses per link
+- **Rate Limiting** - Protect against abuse (120 req/min default)
+- **Analytics** - Track click counts and view top links
+- **HEAD Requests** - Check URLs without consuming click counts
+- **High Availability** - Redis-backed persistence with optional replication
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 CSE-5306-DS-PA2-URLShortener/
 │
-├── 📋 Test Files (Your Main Reference!)
+├── Test Files (Your Main Reference)
 │   ├── microservices_http_runs.txt      # All REST API test commands
 │   ├── layered_grpc_runs.txt            # All gRPC test commands
 │   ├── loadtest_microservice_runs.txt   # HTTP performance tests
 │   └── loadtest_layered_runs.txt        # gRPC performance tests
 │
-├── 🔷 Microservices Architecture
+├── Microservices Architecture
 │   ├── microservices_http/
 │   │   ├── api_gateway/                 # HTTP Gateway (Port 8080)
 │   │   ├── redirect_service/            # URL resolution
@@ -82,7 +82,7 @@ CSE-5306-DS-PA2-URLShortener/
 │   └── deploy/compose/
 │       └── docker-compose.micro.yaml    # Microservices deployment
 │
-├── 🔷 Layered Architecture
+├── Layered Architecture
 │   └── layered_simple/
 │       ├── src/
 │       │   ├── proto/                   # gRPC definitions
@@ -91,22 +91,24 @@ CSE-5306-DS-PA2-URLShortener/
 │       │   └── data/                    # Data Layer (Port 8083)
 │       └── docker-compose.yaml          # Layered deployment
 │
-├── 🗄️ Common Components
+├── Common Components
 │   ├── common/                          # Shared libraries
 │   ├── persistence/                     # Redis repositories
 │   └── deploy/                          # Deployment configs
 │
-└── 📄 Configuration
+└── Configuration
     ├── payload.json                     # Sample request payload
     └── README.md                        # This file
 ```
 
 ---
 
-## 📋 Functional Requirements
+## Functional Requirements
 
 ### Requirement 1: Create Short Links
-**What:** Convert long URLs into short codes  
+
+**What:** Convert long URLs into short codes
+
 **How:** 
 - Accept long URL as input
 - Generate unique 7-character code (base62 encoding)
@@ -119,10 +121,10 @@ Input:  "https://www.google.com"
 Output: "http://localhost:8080/Vy6UJ4i"
 ```
 
----
-
 ### Requirement 2: Resolve & Redirect (HTTP 301)
-**What:** Redirect users from short URL to original URL  
+
+**What:** Redirect users from short URL to original URL
+
 **How:**
 - Lookup short code in Redis
 - Return HTTP 301 redirect
@@ -136,10 +138,10 @@ System finds: https://www.google.com
 Browser redirects user to original URL
 ```
 
----
-
 ### Requirement 3: Rate Limiting
-**What:** Prevent abuse and overload  
+
+**What:** Prevent abuse and overload
+
 **How:**
 - Track requests per IP address
 - Default: 120 requests per minute per IP
@@ -148,15 +150,15 @@ Browser redirects user to original URL
 
 **Example:**
 ```
-IP makes request #1-120:   ✓ Allowed
-IP makes request #121:     ✗ Blocked (429 Too Many Requests)
+IP makes request #1-120:   Allowed
+IP makes request #121:     Blocked (429 Too Many Requests)
 After 60 seconds:          Counter resets
 ```
 
----
-
 ### Requirement 4: Top Links Analytics
-**What:** Show most popular URLs  
+
+**What:** Show most popular URLs
+
 **How:**
 - Track click count per short code
 - Maintain sorted set in Redis (O(log N) updates)
@@ -172,10 +174,10 @@ After 60 seconds:          Counter resets
 ]
 ```
 
----
-
 ### Requirement 5: Link Expiration
-**What:** Automatic link expiration based on time or clicks  
+
+**What:** Automatic link expiration based on time or clicks
+
 **How:**
 
 **Time-based (TTL):**
@@ -203,7 +205,7 @@ After 60 seconds:          Counter resets
 
 ---
 
-## 🏗️ System Architectures
+## System Architectures
 
 ### Architecture 1: Microservices (HTTP/REST)
 
@@ -211,27 +213,27 @@ After 60 seconds:          Counter resets
 
 **Structure:**
 ```
-🔷 API Gateway (Port 8080)
+API Gateway (Port 8080)
    - Routes requests to services
    - Aggregates responses
    - Single entry point
 
-🔷 Redirect Service (Port 8001)
+Redirect Service (Port 8001)
    - Creates short URLs
    - Resolves codes to long URLs
    - Manages expiration
 
-🔷 Analytics Service (Port 8002)
+Analytics Service (Port 8002)
    - Tracks click counts
    - Provides top links
    - Real-time statistics
 
-🔷 Rate Limit Service (Port 8003)
+Rate Limit Service (Port 8003)
    - Checks request limits
    - Enforces rate policies
    - Sliding window counters
 
-🔷 Redis (Port 6379)
+Redis (Port 6379)
    - Shared data store
    - Persistence layer
 ```
@@ -239,34 +241,32 @@ After 60 seconds:          Counter resets
 **Communication:** HTTP/REST with JSON  
 **Deployment:** Docker Compose (5 containers)
 
----
-
 ### Architecture 2: Layered (gRPC)
 
 **Concept:** Vertical stack with strict layer separation and gRPC communication
 
 **Structure:**
 ```
-🔷 API Gateway Layer (Port 8081)
+API Gateway Layer (Port 8081)
    - HTTP to gRPC translation
    - Client-facing interface
    - Request validation
 
-🔷 Business Logic Layer (Port 8082)
+Business Logic Layer (Port 8082)
    - URL validation
    - Code generation
    - Rate limit checks
    - Expiration logic
 
-🔷 Data Service Layer (Port 8083)
+Data Service Layer (Port 8083)
    - Database operations
    - Redis communication
    - Data persistence
 
-🔷 Redis Master (Port 6379)
+Redis Master (Port 6379)
    - Primary storage
 
-🔷 Redis Replica (Port 6380)
+Redis Replica (Port 6380)
    - Backup storage (optional)
 ```
 
@@ -275,9 +275,10 @@ After 60 seconds:          Counter resets
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
+
 - Docker & Docker Compose
 - Python 3.11+ (for local development)
 - grpcurl (for gRPC testing) - Install: `brew install grpcurl` (Mac) or [grpcurl releases](https://github.com/fullstorydev/grpcurl/releases)
@@ -285,7 +286,7 @@ After 60 seconds:          Counter resets
 
 ### Quick Start
 
-#### **Option 1: Microservices Architecture (HTTP/REST)**
+#### Option 1: Microservices Architecture (HTTP/REST)
 
 ```bash
 # 1. Clone repository
@@ -304,9 +305,7 @@ docker-compose -f deploy/compose/docker-compose.micro.yaml up --build
 - API Gateway: http://localhost:8080
 - Health Check: http://localhost:8080/healthz
 
----
-
-#### **Option 2: Layered Architecture (gRPC)**
+#### Option 2: Layered Architecture (gRPC)
 
 ```bash
 # 1. Clone repository (if not already done)
@@ -326,9 +325,7 @@ docker-compose up --build
 - Business Logic: localhost:8082
 - Data Service: localhost:8083
 
----
-
-### 📋 Next Steps
+### Next Steps
 
 After starting your chosen architecture:
 
@@ -342,42 +339,42 @@ After starting your chosen architecture:
 
 ---
 
-## 🧪 Testing
+## Testing
 
-> **💡 TIP:** All test commands are organized in dedicated txt files. **Use these files as your primary testing guide** - they contain complete, ordered test sequences with expected outputs!
+**NOTE:** All test commands are organized in dedicated txt files. Use these files as your primary testing guide - they contain complete, ordered test sequences with expected outputs.
 
-### 📋 Test Files - Your Complete Testing Guide
+### Test Files - Complete Testing Guide
 
 **Microservices Architecture (HTTP/REST) - Port 8080**
-- 📘 **[`microservices_http_runs.txt`](microservices_http_runs.txt)** - Complete testing guide
+
+- **[`microservices_http_runs.txt`](microservices_http_runs.txt)** - Complete testing guide
   - Create short URLs (basic, with TTL, with max_clicks)
   - Resolve URLs (GET and HEAD requests)
   - Get analytics and top links
   - Health checks
-  - ✅ All commands in proper order with examples
+  - All commands in proper order with examples
 
-- 📊 **[`loadtest_microservice_runs.txt`](loadtest_microservice_runs.txt)** - Performance testing
+- **[`loadtest_microservice_runs.txt`](loadtest_microservice_runs.txt)** - Performance testing
   - Apache Bench (ab) commands
   - Performance benchmarking
   - Concurrent request testing
 
 **Layered Architecture (gRPC) - Ports 8081-8083**
-- 📙 **[`layered_grpc_runs.txt`](layered_grpc_runs.txt)** - Complete testing guide
+
+- **[`layered_grpc_runs.txt`](layered_grpc_runs.txt)** - Complete testing guide
   - grpcurl commands for all operations
   - CreateShortURL, ResolveURL, GetTopLinks, GetStats
   - Complete test flows with examples
-  - ✅ All commands in proper order with examples
+  - All commands in proper order with examples
 
-- 📊 **[`loadtest_layered_runs.txt`](loadtest_layered_runs.txt)** - Performance testing
+- **[`loadtest_layered_runs.txt`](loadtest_layered_runs.txt)** - Performance testing
   - ghz commands for gRPC load testing
   - Performance benchmarking
   - Concurrent request testing
 
----
+### Quick Verification Test
 
-### 🚀 Quick Example (Just to Verify It Works)
-
-**Want a 30-second smoke test?** Try these minimal commands:
+Want a 30-second smoke test? Try these minimal commands:
 
 **Microservices (HTTP):**
 ```bash
@@ -404,11 +401,11 @@ grpcurl -plaintext \
 # Response: {"code": "xyz789", "shortUrl": "http://localhost:8081/xyz789"}
 ```
 
-✅ **If these work, proceed to the complete test files above for full testing!**
+**If these work, proceed to the complete test files above for full testing.**
 
 ---
 
-## 📊 Architecture Comparison
+## Architecture Comparison
 
 ### Performance & Trade-offs
 
@@ -449,9 +446,10 @@ Both architectures are fully implemented and tested. For detailed performance co
 
 ---
 
-## 🔧 Troubleshooting
+## Troubleshooting
 
 ### Services won't start?
+
 1. Check if ports are already in use:
    ```bash
    # Microservices uses: 8080, 6379
@@ -466,7 +464,8 @@ Both architectures are fully implemented and tested. For detailed performance co
    ```
 
 ### Commands not working?
-1. **First check the test files!** They contain the correct, tested commands:
+
+1. **First check the test files** - They contain the correct, tested commands:
    - `microservices_http_runs.txt` for REST API
    - `layered_grpc_runs.txt` for gRPC
 
@@ -485,6 +484,7 @@ Both architectures are fully implemented and tested. For detailed performance co
    ```
 
 ### Need grpcurl?
+
 ```bash
 # macOS
 brew install grpcurl
@@ -497,7 +497,7 @@ sudo mv grpcurl /usr/local/bin/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! If you find issues or have suggestions:
 
@@ -508,13 +508,13 @@ Contributions are welcome! If you find issues or have suggestions:
 
 ---
 
-## 📝 License
+## License
 
 MIT License - See [LICENSE](LICENSE) file for details
 
 ---
 
-## 👨‍💻 Author
+## Author
 
 **Abhijit Challapalli**  
 University of Texas at Arlington  
@@ -524,28 +524,30 @@ CSE 5306 - Distributed Systems
 
 ---
 
-## 🎓 Academic Context
+## Academic Context
 
 This project was developed as Programming Assignment 2 for CSE 5306 (Distributed Systems) at the University of Texas at Arlington. It demonstrates:
 
-- ✅ Distributed system design patterns
-- ✅ Microservices vs Layered architectures
-- ✅ RESTful and gRPC communication
-- ✅ Containerization and orchestration
-- ✅ Performance evaluation and trade-off analysis
-- ✅ Production-ready distributed system implementation
+- Distributed system design patterns
+- Microservices vs Layered architectures
+- RESTful and gRPC communication
+- Containerization and orchestration
+- Performance evaluation and trade-off analysis
+- Production-ready distributed system implementation
 
 ---
 
-## 🔗 Quick Links
+## Quick Links
 
-### **📋 Testing Guides (Start Here!)**
+### Testing Guides (Start Here)
+
 - [Microservices HTTP Tests](microservices_http_runs.txt) - All REST API commands
 - [Layered gRPC Tests](layered_grpc_runs.txt) - All gRPC commands
 - [HTTP Load Tests](loadtest_microservice_runs.txt) - Performance benchmarking
 - [gRPC Load Tests](loadtest_layered_runs.txt) - Performance benchmarking
 
-### **📚 Documentation**
+### Documentation
+
 - [GitHub Repository](https://github.com/AbhijitChallapalli/CSE-5306-DS-PA2-URLShortener)
 - [Docker Compose Files](deploy/compose/)
 - [API Gateway Code](microservices_http/api_gateway/)
@@ -553,7 +555,7 @@ This project was developed as Programming Assignment 2 for CSE 5306 (Distributed
 
 ---
 
-> **📌 Remember:** For the best testing experience, follow the commands in the txt files above. They're organized, tested, and include expected outputs!
+**Note:** For the best testing experience, follow the commands in the txt files above. They're organized, tested, and include expected outputs.
 
 ---
 
