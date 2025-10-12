@@ -11,21 +11,26 @@ FR4: Expire by Max-Clicks
 FR5: Top links leaderboard
 
 (Extras at the end: Stats & Health, plus Reset data.)
-If you are using MAC OS use this command or skip this step. 
-# Set platform before pulling
-export DOCKER_DEFAULT_PLATFORM=linux/amd64
+
 
 0) Start by pulling the images from dockerhub using the yaml file:
+
+If you are using MAC OS use this command or skip this step. 
+
+# Set platform before pulling
+export DOCKER_DEFAULT_PLATFORM=linux/amd64
 
 cd deploy/compose
 docker compose -f docker-compose.micro.remote.yaml pull
 docker compose -f docker-compose.micro.remote.yaml up -d
 
 # Reuse the gateway’s network namespace so we can reliably call localhost:8080
+
 GATEWAY=$(docker compose -f docker-compose.micro.remote.yaml ps -q api-gateway)
+
 echo "GATEWAY=$GATEWAY"
 
-Functional Requirement 1: Create Short URL
+*Functional Requirement 1: Create Short URL*
 
 #Create with TTL and max clicks (for expiry demos)
 
@@ -39,8 +44,7 @@ CODE=$(
 echo "CODE=$CODE"
 
 
-
-Functional Requirement 2: Resolve a code (redirect to original URL)
+*Functional Requirement 2: Resolve a code (redirect to original URL)*
 
 A) GET (counts a click) → expect 301 with Location: header
 
@@ -52,7 +56,12 @@ B) HEAD (does not count a click) → also 301, no body
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s -I "http://localhost:8080/$CODE" | head -n 3
 
-Functional Requirement 3: Expire by max_clicks (if created with "max_clicks":2)
+*Functional Requirement 3: Top links (click leaderboard)*
+
+docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+  -s "http://localhost:8080/analytics/top?limit=5"
+
+Functional Requirement 4: Expire by max_clicks (if created with "max_clicks":2)
 
 for i in 1 2; do
   echo "GET #$i"
@@ -61,25 +70,32 @@ for i in 1 2; do
 done
 # The 3rd GET should return HTTP/1.1 410
 
-Functional Requirement 4: TTL expiry(if created with "ttl_sec":30)
+Functional Requirement 5: TTL expiry(if created with "ttl_sec":30)
 
-sleep 500
+*As we expired the link regenerate a link to test the FR 5*
+
+CODE=$(
+  docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
+    -s -H 'Content-Type: application/json' \
+    -d '{"long_url":"https://www.youtube.com","ttl_sec":30,"max_clicks":2}' \
+    http://localhost:8080/shorten \
+  | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
+)
+echo "CODE=$CODE"
+
+sleep 20
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 2
 # Expect HTTP/1.1 404 after TTL
 
-Functional Requirement 5: Top links (click leaderboard)
 
-docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
-  -s "http://localhost:8080/analytics/top?limit=5"
-
-Functional Requirement 6: Per-code “Stats” (inspect stored values)
+*Functional Requirement 6: Per-code “Stats” (inspect stored values)*
 
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s "http://localhost:8080/stats/$CODE"
 
 
-Functional Requirement 7: Health check (gateway + downstream)
+*Functional Requirement 7: Health check (gateway + downstream)*
 
 docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
   -s http://localhost:8080/healthz
