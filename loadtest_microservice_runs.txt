@@ -85,14 +85,40 @@ docker run --rm --network urlshortener-net \
 Open Grafana: http://localhost:3000
 
 Username: admin
-password: 12345
+password: admin
+
+create a new password.
+
+Add the InfluxDB data source
 
 Data source: your InfluxDB (k6).
+Connections → Add new connection → InfluxDB → Add new data source.
+Configure:
+Query language: InfluxQL (you’re on InfluxDB 1.8)
+
+URL: http://influxdb:8086
+
+Database: k6
+
+Leave auth empty
+
+Click Save & test (should say “Data source is working”).
+
+In Grafana: left sidebar → Dashboards → + Import.
+
+In the “Import via grafana.com” box, enter one of these IDs:
+
+2587 (classic “k6 Load Testing Results”)
+
+14801 (another k6 dashboard, also good)
+
+Click Load → choose your InfluxDB data source (the one you just created) → Import.
 
 Go to Dashboard: You will see two of them with the results.
 
+Re-run your k6 test (so you see live updates).
 
-docker run --rm --network urlshortener-net curlimages/curl:8.8.0 \
-  -sG 'http://influxdb:8086/query' \
-  --data-urlencode 'db=k6' \
-  --data-urlencode 'q=SHOW MEASUREMENTS'
+Open Grafana: http://localhost:3000
+
+login with your username and password. Go to Dashboard and look for results.
+
