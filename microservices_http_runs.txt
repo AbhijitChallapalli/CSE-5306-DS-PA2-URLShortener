@@ -68,7 +68,7 @@ for i in 1 2; do
   docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
     -s -o /dev/null -D - "http://localhost:8080/$CODE" | head -n 2
 done
-# The 3rd GET should return HTTP/1.1 410
+# The 2rd GET should return HTTP/1.1 410
 
 Functional Requirement 5: TTL expiry(if created with "ttl_sec":30)
 
