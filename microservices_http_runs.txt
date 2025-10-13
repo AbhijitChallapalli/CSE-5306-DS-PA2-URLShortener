@@ -102,4 +102,4 @@ docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
 
 
 Reset data (for clean reruns)
-docker compose -f docker-compose.remote.yaml exec -T redis redis-cli FLUSHDB
+docker compose -f docker-compose.micro.remote.yaml exec -T redis redis-cli FLUSHDB
