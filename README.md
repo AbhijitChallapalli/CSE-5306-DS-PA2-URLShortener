@@ -10,7 +10,7 @@ A high-performance, distributed URL shortening service implementing both **Micro
 
 ## Important: Testing Guide
 
-**All test commands are organized in dedicated txt files.** Follow these for step-by-step testing:
+**All test commands are organized in dedicated txt files. All of them are Git Bash or works on mac terminal** Follow these for step-by-step testing:
 
 - [`microservices_http_runs.txt`](microservices_http_runs.txt) - This file has all the run commands for microservice architecture with all the functional requirements executed in order.
 - [`layered_grpc_runs.txt`](layered_grpc_runs.txt) - This file has all the run commands for layered architecture with all the functional requirements executed in order.
