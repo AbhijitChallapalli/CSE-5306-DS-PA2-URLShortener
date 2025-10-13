@@ -12,8 +12,10 @@ FR5: Top links leaderboard
 
 (Extras at the end: Stats & Health, plus Reset data.)
 
+0) Start by pulling the images from dockerhub using the yaml file by using cloning the git repo:
 
-0) Start by pulling the images from dockerhub using the yaml file:
+git clone https://github.com/AbhijitChallapalli/CSE-5306-DS-PA2-URLShortener.git
+
 
 If you are using MAC OS use this command or skip this step. 
 
