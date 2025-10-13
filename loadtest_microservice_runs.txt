@@ -25,7 +25,7 @@ echo "GATEWAY=$GATEWAY"
 CODE=$(
   docker run --rm --network container:$GATEWAY curlimages/curl:8.8.0 \
     -s -H 'Content-Type: application/json' \
-    -d '{"long_url":"https://www.youtube.com","ttl_sec":300,"max_clicks":100000}' \
+    -d '{"long_url":"https://www.youtube.com","ttl_sec":10000,"max_clicks":100000}' \
     http://localhost:8080/shorten \
   | sed -n 's/.*"code":"\([^"]*\)".*/\1/p'
 )
